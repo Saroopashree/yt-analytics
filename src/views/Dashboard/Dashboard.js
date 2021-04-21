@@ -1,7 +1,5 @@
 import React, { Component, Fragment } from "react";
 // react plugin for creating charts
-import ChartistGraph from "react-chartist";
-import axios from "axios";
 // @material-ui/core
 import { makeStyles, withStyles } from "@material-ui/core/styles";
 import Icon from "@material-ui/core/Icon";
@@ -11,12 +9,7 @@ import Warning from "@material-ui/icons/Warning";
 import DateRange from "@material-ui/icons/DateRange";
 import LocalOffer from "@material-ui/icons/LocalOffer";
 import Update from "@material-ui/icons/Update";
-import ArrowUpward from "@material-ui/icons/ArrowUpward";
-import AccessTime from "@material-ui/icons/AccessTime";
 import Accessibility from "@material-ui/icons/Accessibility";
-import BugReport from "@material-ui/icons/BugReport";
-import Code from "@material-ui/icons/Code";
-import Cloud from "@material-ui/icons/Cloud";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import Select from "@material-ui/core/Select";
@@ -26,22 +19,11 @@ import LinearProgress from "@material-ui/core/LinearProgress";
 import GridItem from "components/Grid/GridItem";
 import GridContainer from "components/Grid/GridContainer";
 import Table from "components/Table/Table";
-import Tasks from "components/Tasks/Tasks";
-import CustomTabs from "components/CustomTabs/CustomTabs";
-import Danger from "components/Typography/Danger";
 import Card from "components/Card/Card";
 import CardHeader from "components/Card/CardHeader";
 import CardIcon from "components/Card/CardIcon";
 import CardBody from "components/Card/CardBody";
 import CardFooter from "components/Card/CardFooter";
-
-import { bugs, website, server } from "variables/general";
-
-import {
-  dailySalesChart,
-  emailsSubscriptionChart,
-  completedTasksChart,
-} from "variables/charts";
 
 import styles from "assets/jss/material-dashboard-react/views/dashboardStyle";
 import TreemapChart from "components/Chart/TreemapChart";
