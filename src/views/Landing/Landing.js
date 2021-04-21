@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { Component, Fragment } from "react";
 import { AppBar, Toolbar } from "@material-ui/core";
 import { withStyles } from "@material-ui/core/styles";
 
@@ -9,6 +9,7 @@ import CardHeader from "components/Card/CardHeader";
 import CardIcon from "components/Card/CardIcon";
 import CardBody from "components/Card/CardBody";
 import CardFooter from "components/Card/CardFooter";
+import LinearProgress from "@material-ui/core/LinearProgress";
 
 import styles from "assets/jss/material-dashboard-react/views/dashboardStyle";
 
@@ -21,10 +22,10 @@ class LandingPage extends Component {
     super(props);
 
     this.channels = [
-      { id: "UCEXIAHV9bTpKyU30xmsykww", name: "ZYXTER Gaming" },
       { id: "UCH1oRy1dINbMVp3UFWrKP0w", name: "Good Morning America" },
-      { id: "UCPPIsrNlEkaFQBk-4uNkOaw", name: "Hebbar's Kitchen" },
       { id: "UCq18eeL7D9Vd8DhjMcLh9QQ", name: "Good Morning Britain" },
+      { id: "UCPPIsrNlEkaFQBk-4uNkOaw", name: "Hebbar's Kitchen" },
+      { id: "UCEXIAHV9bTpKyU30xmsykww", name: "ZYXTER Gaming" },
       { id: "UCVLbzhxVTiTLiVKeGV7WEBg", name: "Tutorials Point" },
     ];
 
@@ -257,6 +258,7 @@ class LandingPage extends Component {
           },
         },
       },
+      isLoading: true,
     };
   }
 
@@ -265,21 +267,39 @@ class LandingPage extends Component {
   }
 
   handleRequests = () => {
+    this.setState({ isLoading: true });
+
     let apiRequests = [];
 
-    apiRequests.push(fetch("http://127.0.0.1:8000/most_viewed"));
-    apiRequests.push(fetch("http://127.0.0.1:8000/most_liked"));
-    apiRequests.push(fetch("http://127.0.0.1:8000/most_disliked"));
-    apiRequests.push(fetch("http://127.0.0.1:8000/most_commented"));
+    apiRequests.push(
+      fetch("http://127.0.0.1:8000/most_viewed", {
+        method: "GET",
+      }).then((res) => res.json())
+    );
+    apiRequests.push(
+      fetch("http://127.0.0.1:8000/most_liked", { method: "GEt" }).then((res) =>
+        res.json()
+      )
+    );
+    apiRequests.push(
+      fetch("http://127.0.0.1:8000/most_disliked", {
+        method: "GEt",
+      }).then((res) => res.json())
+    );
+    apiRequests.push(
+      fetch("http://127.0.0.1:8000/most_commented", {
+        method: "GEt",
+      }).then((res) => res.json())
+    );
 
     Promise.all(apiRequests).then((responses) => {
       let details = {
-        viewed: responses[0].json(),
-        liked: responses[1].json(),
-        disliked: responses[2].json(),
-        commented: responses[3].json(),
+        viewed: responses[0],
+        liked: responses[1],
+        disliked: responses[2],
+        commented: responses[3],
       };
-      this.setState({ details: details });
+      this.setState({ details: details, isLoading: false });
     });
   };
 
@@ -321,68 +341,86 @@ class LandingPage extends Component {
             </div>
           </Toolbar>
         </AppBar>
-        <GridContainer>
-          <GridItem xs={12} sm={12} md={6}>
-            <Card chart>
-              <CardHeader color="success">
-                <SunburstChart
-                  data={this.getDataForSunburst(
-                    Object.values(this.state.details.viewed),
-                    "views"
-                  )}
-                />
-              </CardHeader>
-              <CardBody>
-                <h4 className={classes.cardTitle}>Most viewed videos</h4>
-              </CardBody>
-            </Card>
-          </GridItem>
-          <GridItem xs={12} sm={12} md={6}>
-            <Card chart>
-              <CardHeader color="warning">
-                <SunburstChart
-                  data={this.getDataForSunburst(
-                    Object.values(this.state.details.liked),
-                    "liked"
-                  )}
-                />
-              </CardHeader>
-              <CardBody>
-                <h4 className={classes.cardTitle}>Most liked videos</h4>
-              </CardBody>
-            </Card>
-          </GridItem>
-          <GridItem xs={12} sm={12} md={6}>
-            <Card chart>
-              <CardHeader color="danger">
-                <SunburstChart
-                  data={this.getDataForSunburst(
-                    Object.values(this.state.details.commented),
-                    "comment"
-                  )}
-                />
-              </CardHeader>
-              <CardBody>
-                <h4 className={classes.cardTitle}>Most commented videos</h4>
-              </CardBody>
-            </Card>
-          </GridItem>
-          <GridItem xs={12} sm={12} md={6}>
-            <Card chart>
-              <CardHeader color="info">
-                <SunburstChart
-                  data={this.getDataForSunburst(
-                    Object.values(this.state.details.disliked),
-                    "disliked"
-                  )}
-                />
-              </CardHeader>
-              <CardBody>
-                <h4 className={classes.cardTitle}>Most disliked videos</h4>
-              </CardBody>
-            </Card>
-          </GridItem>
-        </GridContainer>
+        {this.state.isLoading ? (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              width: "100%",
+              height: "100%",
+            }}
+          >
+            <LinearProgress
+              style={{ height: "20px", width: "100px" }}
+              color="primary"
+            />
+          </div>
+        ) : (
+          <Fragment>
+            <GridContainer>
+              <GridItem xs={12} sm={12} md={6}>
+                <Card chart>
+                  <CardHeader color="success">
+                    <SunburstChart
+                      data={this.getDataForSunburst(
+                        Object.values(this.state.details.viewed),
+                        "views"
+                      )}
+                    />
+                  </CardHeader>
+                  <CardBody>
+                    <h4 className={classes.cardTitle}>Most viewed videos</h4>
+                  </CardBody>
+                </Card>
+              </GridItem>
+              <GridItem xs={12} sm={12} md={6}>
+                <Card chart>
+                  <CardHeader color="warning">
+                    <SunburstChart
+                      data={this.getDataForSunburst(
+                        Object.values(this.state.details.liked),
+                        "liked"
+                      )}
+                    />
+                  </CardHeader>
+                  <CardBody>
+                    <h4 className={classes.cardTitle}>Most liked videos</h4>
+                  </CardBody>
+                </Card>
+              </GridItem>
+              <GridItem xs={12} sm={12} md={6}>
+                <Card chart>
+                  <CardHeader color="danger">
+                    <SunburstChart
+                      data={this.getDataForSunburst(
+                        Object.values(this.state.details.commented),
+                        "comment"
+                      )}
+                    />
+                  </CardHeader>
+                  <CardBody>
+                    <h4 className={classes.cardTitle}>Most commented videos</h4>
+                  </CardBody>
+                </Card>
+              </GridItem>
+              <GridItem xs={12} sm={12} md={6}>
+                <Card chart>
+                  <CardHeader color="info">
+                    <SunburstChart
+                      data={this.getDataForSunburst(
+                        Object.values(this.state.details.disliked),
+                        "disliked"
+                      )}
+                    />
+                  </CardHeader>
+                  <CardBody>
+                    <h4 className={classes.cardTitle}>Most disliked videos</h4>
+                  </CardBody>
+                </Card>
+              </GridItem>
+            </GridContainer>
+          </Fragment>
+        )}
       </div>
     );
   }

@@ -1,6 +1,7 @@
-import React, { Component } from "react";
+import React, { Component, Fragment } from "react";
 // react plugin for creating charts
 import ChartistGraph from "react-chartist";
+import axios from "axios";
 // @material-ui/core
 import { makeStyles, withStyles } from "@material-ui/core/styles";
 import Icon from "@material-ui/core/Icon";
@@ -20,6 +21,7 @@ import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
+import LinearProgress from "@material-ui/core/LinearProgress";
 // core components
 import GridItem from "components/Grid/GridItem";
 import GridContainer from "components/Grid/GridContainer";
@@ -43,6 +45,7 @@ import {
 
 import styles from "assets/jss/material-dashboard-react/views/dashboardStyle";
 import TreemapChart from "components/Chart/TreemapChart";
+import StackedBarChart from "components/Chart/StackedBar";
 
 const useStyles = makeStyles(styles);
 
@@ -51,11 +54,11 @@ class Dashboard extends Component {
     super(props);
 
     this.channels = [
-      { id: "UCEXIAHV9bTpKyU30xmsykww", name: "ZYXTER Gaming" },
       { id: "UCH1oRy1dINbMVp3UFWrKP0w", name: "Good Morning America" },
-      { id: "UCPPIsrNlEkaFQBk-4uNkOaw", name: "Hebbar's Kitchen" },
       { id: "UCq18eeL7D9Vd8DhjMcLh9QQ", name: "Good Morning Britain" },
+      { id: "UCPPIsrNlEkaFQBk-4uNkOaw", name: "Hebbar's Kitchen" },
       { id: "UCVLbzhxVTiTLiVKeGV7WEBg", name: "Tutorials Point" },
+      { id: "UCEXIAHV9bTpKyU30xmsykww", name: "ZYXTER Gaming" },
     ];
 
     this.state = {
@@ -598,6 +601,7 @@ class Dashboard extends Component {
           9: { comment: 469.0, title: "MS Excel - Basics" },
         },
       },
+      isLoading: true,
     };
   }
 
@@ -606,6 +610,8 @@ class Dashboard extends Component {
   }
 
   handleRequests = () => {
+    this.setState({ isLoading: true });
+
     let apiRequests = [];
 
     apiRequests.push(
@@ -614,7 +620,7 @@ class Dashboard extends Component {
           channelID: this.state.currentChannel,
         }).toString()}`,
         { method: "GET" }
-      )
+      ).then((res) => res.json())
     );
     apiRequests.push(
       fetch(
@@ -622,7 +628,7 @@ class Dashboard extends Component {
           channelID: this.state.currentChannel,
         }).toString()}`,
         { method: "GET" }
-      )
+      ).then((res) => res.json())
     );
     apiRequests.push(
       fetch(
@@ -630,7 +636,7 @@ class Dashboard extends Component {
           channelID: this.state.currentChannel,
         }).toString()}`,
         { method: "GET" }
-      )
+      ).then((res) => res.json())
     );
     apiRequests.push(
       fetch(
@@ -638,7 +644,7 @@ class Dashboard extends Component {
           channelID: this.state.currentChannel,
         }).toString()}`,
         { method: "GET" }
-      )
+      ).then((res) => res.json())
     );
     apiRequests.push(
       fetch(
@@ -646,7 +652,7 @@ class Dashboard extends Component {
           channelID: this.state.currentChannel,
         }).toString()}`,
         { method: "GET" }
-      )
+      ).then((res) => res.json())
     );
     apiRequests.push(
       fetch(
@@ -654,27 +660,60 @@ class Dashboard extends Component {
           channelID: this.state.currentChannel,
         }).toString()}`,
         { method: "GET" }
-      )
+      ).then((res) => res.json())
     );
 
     Promise.all(apiRequests).then((responses) => {
-      let summary = responses[0].json();
+      let summary = responses[0];
       let details = {
-        all: responses[1].json(),
-        viewed: responses[2].json(),
-        liked: responses[3].json(),
-        disliked: responses[4].json(),
-        commented: responses[5].json(),
+        all: responses[1],
+        viewed: responses[2],
+        liked: responses[3],
+        disliked: responses[4],
+        commented: responses[5],
       };
 
-      this.setState({ summary: summary, details: details });
+      this.setState({ summary: summary, details: details, isLoading: false });
     });
   };
 
   handleChannelChange = (event) => {
-    this.setState({ currentChannel: event.target.value });
+    this.setState({ currentChannel: event.target.value }, this.handleRequests);
+  };
 
-    this.handleRequests();
+  getStackedBarProps = () => {
+    let top5 = Object.values(this.state.details.all);
+    top5 = top5
+      .sort(
+        (a, b) =>
+          b.views +
+          b.liked +
+          b.disliked +
+          b.comment -
+          (a.views + a.liked + a.disliked + a.comment)
+      )
+      .slice(0, 5);
+
+    let categories = [
+      {
+        category: top5.map((v) => ({
+          label: v.title.length > 35 ? v.title.slice(0, 35) + "..." : v.title,
+        })),
+      },
+    ];
+
+    const colMap = {
+      Likes: { key: "liked" },
+      Dislikes: { key: "disliked" },
+      Views: { key: "views" },
+      Comments: { key: "comment" },
+    };
+    let dataset = Object.entries(colMap).map((e) => ({
+      seriesName: e[0],
+      data: top5.map((v) => ({ value: String(v[e[1].key]) })),
+    }));
+
+    return { categories, dataset };
   };
 
   render() {
@@ -692,7 +731,6 @@ class Dashboard extends Component {
         <AppBar className={classes.appBar}>
           <Toolbar className={classes.container}>
             <div className={classes.flex}>
-              {/* Here we create navbar brand, based on route name */}
               <h3 className={classes.title} style={{ display: "inline" }}>
                 Dashboard{" - "}
               </h3>
@@ -709,279 +747,207 @@ class Dashboard extends Component {
             </div>
           </Toolbar>
         </AppBar>
-        <GridContainer>
-          <GridItem xs={12} sm={6} md={3}>
-            <Card>
-              <CardHeader color="warning" stats icon>
-                <CardIcon color="warning">
-                  <Icon>content_copy</Icon>
-                </CardIcon>
-                <p className={classes.cardCategory}>Subscriber Count</p>
-                <h3 className={classes.cardTitle}>
-                  {Math.round(
-                    this.state.summary.subscriberCount[0]
-                  ).toLocaleString("en-IN")}
-                </h3>
-              </CardHeader>
-              <CardFooter stats>
-                <div className={classes.stats}>
-                  <Warning />
-                  Total no. of Subscribers
-                </div>
-              </CardFooter>
-            </Card>
-          </GridItem>
-          <GridItem xs={12} sm={6} md={3}>
-            <Card>
-              <CardHeader color="success" stats icon>
-                <CardIcon color="success">
-                  <Store />
-                </CardIcon>
-                <p className={classes.cardCategory}>View count</p>
-                <h3 className={classes.cardTitle}>
-                  {Math.round(this.state.summary.viewCount[0]).toLocaleString(
-                    "en-IN"
-                  )}
-                </h3>
-              </CardHeader>
-              <CardFooter stats>
-                <div className={classes.stats}>
-                  <DateRange />
-                  Total views in the channel
-                </div>
-              </CardFooter>
-            </Card>
-          </GridItem>
-          <GridItem xs={12} sm={6} md={3}>
-            <Card>
-              <CardHeader color="danger" stats icon>
-                <CardIcon color="danger">
-                  <Icon>info_outline</Icon>
-                </CardIcon>
-                <p className={classes.cardCategory}>Video Count</p>
-                <h3 className={classes.cardTitle}>
-                  {Math.round(this.state.summary.videoCount[0]).toLocaleString(
-                    "en-IN"
-                  )}
-                </h3>
-              </CardHeader>
-              <CardFooter stats>
-                <div className={classes.stats}>
-                  <LocalOffer />
-                  No of videos uploaded
-                </div>
-              </CardFooter>
-            </Card>
-          </GridItem>
-          <GridItem xs={12} sm={6} md={3}>
-            <Card>
-              <CardHeader color="info" stats icon>
-                <CardIcon color="info">
-                  <Accessibility />
-                </CardIcon>
-                <p className={classes.cardCategory}>Like Count</p>
-                <h3 className={classes.cardTitle}>
-                  {Math.round(this.state.summary.likedCount[0]).toLocaleString(
-                    "en-IN"
-                  )}
-                </h3>
-              </CardHeader>
-              <CardFooter stats>
-                <div className={classes.stats}>
-                  <Update />
-                  Total no. of likes in all videos
-                </div>
-              </CardFooter>
-            </Card>
-          </GridItem>
-        </GridContainer>
-        <GridContainer>
-          <GridItem xs={12} sm={12} md={6}>
-            <Card chart>
-              <CardHeader color="success">
-                {/* <ChartistGraph
-                className="ct-chart"
-                data={dailySalesChart.data}
-                type="Line"
-                options={dailySalesChart.options}
-                listener={dailySalesChart.animation}
-              /> */}
-                <TreemapChart
-                  data={Object.values(this.state.details.viewed).map((v) => ({
-                    x: v.title,
-                    y: v.views,
-                  }))}
-                />
-              </CardHeader>
-              <CardBody>
-                <h4 className={classes.cardTitle}>Most viewed videos</h4>
-                {/* <p className={classes.cardCategory}>
-                  <span className={classes.successText}>
-                    <ArrowUpward className={classes.upArrowCardCategory} /> 55%
-                  </span>{" "}
-                  increase in today sales.
-                </p> */}
-              </CardBody>
-              {/* <CardFooter chart>
-                <div className={classes.stats}>
-                  <AccessTime /> updated 4 minutes ago
-                </div>
-              </CardFooter> */}
-            </Card>
-          </GridItem>
-          <GridItem xs={12} sm={12} md={6}>
-            <Card chart>
-              <CardHeader color="warning">
-                {/* <ChartistGraph
-                className="ct-chart"
-                data={emailsSubscriptionChart.data}
-                type="Bar"
-                options={emailsSubscriptionChart.options}
-                responsiveOptions={emailsSubscriptionChart.responsiveOptions}
-                listener={emailsSubscriptionChart.animation}
-              /> */}
-                <TreemapChart
-                  data={Object.values(this.state.details.liked).map((v) => ({
-                    x: v.title,
-                    y: v.liked,
-                  }))}
-                />
-              </CardHeader>
-              <CardBody>
-                <h4 className={classes.cardTitle}>Most liked videos</h4>
-                {/* <p className={classes.cardCategory}>
-                  Last Campaign Performance
-                </p> */}
-              </CardBody>
-              {/* <CardFooter chart>
-                <div className={classes.stats}>
-                  <AccessTime /> campaign sent 2 days ago
-                </div>
-              </CardFooter> */}
-            </Card>
-          </GridItem>
-          <GridItem xs={12} sm={12} md={6}>
-            <Card chart>
-              <CardHeader color="danger">
-                {/* <ChartistGraph
-                className="ct-chart"
-                data={completedTasksChart.data}
-                type="Line"
-                options={completedTasksChart.options}
-                listener={completedTasksChart.animation}
-              /> */}
-                <TreemapChart
-                  data={Object.values(this.state.details.commented).map(
-                    (v) => ({
-                      x: v.title,
-                      y: v.comment,
-                    })
-                  )}
-                />
-              </CardHeader>
-              <CardBody>
-                <h4 className={classes.cardTitle}>Most commented videos</h4>
-                {/* <p className={classes.cardCategory}>
-                  Last Campaign Performance
-                </p> */}
-              </CardBody>
-              {/* <CardFooter chart>
-                <div className={classes.stats}>
-                  <AccessTime /> campaign sent 2 days ago
-                </div>
-              </CardFooter> */}
-            </Card>
-          </GridItem>
-          <GridItem xs={12} sm={12} md={6}>
-            <Card chart>
-              <CardHeader color="info">
-                {/* <ChartistGraph
-                className="ct-chart"
-                data={completedTasksChart.data}
-                type="Line"
-                options={completedTasksChart.options}
-                listener={completedTasksChart.animation}
-              /> */}
-                <TreemapChart
-                  data={Object.values(this.state.details.disliked).map((v) => ({
-                    x: v.title,
-                    y: v.disliked,
-                  }))}
-                />
-              </CardHeader>
-              <CardBody>
-                <h4 className={classes.cardTitle}>Most disliked videos</h4>
-                {/* <p className={classes.cardCategory}>
-                  Last Campaign Performance
-                </p> */}
-              </CardBody>
-              {/* <CardFooter chart>
-                <div className={classes.stats}>
-                  <AccessTime /> campaign sent 2 days ago
-                </div>
-              </CardFooter> */}
-            </Card>
-          </GridItem>
-        </GridContainer>
-        <GridContainer>
-          {/* <GridItem xs={12} sm={12} md={6}>
-            <CustomTabs
-              title="Tasks:"
-              headerColor="primary"
-              tabs={[
-                {
-                  tabName: "Bugs",
-                  tabIcon: BugReport,
-                  tabContent: (
-                    <Tasks
-                      checkedIndexes={[0, 3]}
-                      tasksIndexes={[0, 1, 2, 3]}
-                      tasks={bugs}
-                    />
-                  ),
-                },
-                {
-                  tabName: "Website",
-                  tabIcon: Code,
-                  tabContent: (
-                    <Tasks
-                      checkedIndexes={[0]}
-                      tasksIndexes={[0, 1]}
-                      tasks={website}
-                    />
-                  ),
-                },
-                {
-                  tabName: "Server",
-                  tabIcon: Cloud,
-                  tabContent: (
-                    <Tasks
-                      checkedIndexes={[1]}
-                      tasksIndexes={[0, 1, 2]}
-                      tasks={server}
-                    />
-                  ),
-                },
-              ]}
+        {this.state.isLoading ? (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              width: "100%",
+              height: "100%",
+            }}
+          >
+            <LinearProgress
+              style={{ height: "20px", width: "100px" }}
+              color="primary"
             />
-          </GridItem> */}
-          <GridItem xs={12} sm={12} md={12}>
-            <Card>
-              <CardHeader color="success">
-                <h4 className={classes.cardTitleWhite}>Detailed Stats</h4>
-                <p className={classes.cardCategoryWhite}>50 Featured Videos</p>
-              </CardHeader>
-              <CardBody>
-                <Table
-                  tableHeaderColor="primary"
-                  tableHead={Object.keys(colMap)}
-                  tableData={Object.values(this.state.details.all)}
-                  columnMap={colMap}
-                />
-              </CardBody>
-            </Card>
-          </GridItem>
-        </GridContainer>
+          </div>
+        ) : (
+          <Fragment>
+            <GridContainer>
+              <GridItem xs={12} sm={6} md={3}>
+                <Card>
+                  <CardHeader color="warning" stats icon>
+                    <CardIcon color="warning">
+                      <Icon>content_copy</Icon>
+                    </CardIcon>
+                    <p className={classes.cardCategory}>Subscriber Count</p>
+                    <h3 className={classes.cardTitle}>
+                      {this.state.summary[0].subscriberCount.toLocaleString(
+                        "en-IN"
+                      )}
+                    </h3>
+                  </CardHeader>
+                  <CardFooter stats>
+                    <div className={classes.stats}>
+                      <Warning />
+                      Total no. of Subscribers
+                    </div>
+                  </CardFooter>
+                </Card>
+              </GridItem>
+              <GridItem xs={12} sm={6} md={3}>
+                <Card>
+                  <CardHeader color="success" stats icon>
+                    <CardIcon color="success">
+                      <Store />
+                    </CardIcon>
+                    <p className={classes.cardCategory}>View count</p>
+                    <h3 className={classes.cardTitle}>
+                      {this.state.summary[0].viewCount.toLocaleString("en-IN")}
+                    </h3>
+                  </CardHeader>
+                  <CardFooter stats>
+                    <div className={classes.stats}>
+                      <DateRange />
+                      Total views in the channel
+                    </div>
+                  </CardFooter>
+                </Card>
+              </GridItem>
+              <GridItem xs={12} sm={6} md={3}>
+                <Card>
+                  <CardHeader color="danger" stats icon>
+                    <CardIcon color="danger">
+                      <Icon>info_outline</Icon>
+                    </CardIcon>
+                    <p className={classes.cardCategory}>Video Count</p>
+                    <h3 className={classes.cardTitle}>
+                      {this.state.summary[0].videoCount.toLocaleString("en-IN")}
+                    </h3>
+                  </CardHeader>
+                  <CardFooter stats>
+                    <div className={classes.stats}>
+                      <LocalOffer />
+                      No of videos uploaded
+                    </div>
+                  </CardFooter>
+                </Card>
+              </GridItem>
+              <GridItem xs={12} sm={6} md={3}>
+                <Card>
+                  <CardHeader color="info" stats icon>
+                    <CardIcon color="info">
+                      <Accessibility />
+                    </CardIcon>
+                    <p className={classes.cardCategory}>Like Count</p>
+                    <h3 className={classes.cardTitle}>
+                      {this.state.summary[0].likedCount.toLocaleString("en-IN")}
+                    </h3>
+                  </CardHeader>
+                  <CardFooter stats>
+                    <div className={classes.stats}>
+                      <Update />
+                      Total no. of likes in all videos
+                    </div>
+                  </CardFooter>
+                </Card>
+              </GridItem>
+            </GridContainer>
+            <GridContainer>
+              <GridItem xs={12} sm={12} md={6}>
+                <Card chart>
+                  <CardHeader color="success">
+                    <TreemapChart
+                      data={Object.values(this.state.details.viewed).map(
+                        (v) => ({
+                          x: v.title,
+                          y: v.views,
+                        })
+                      )}
+                    />
+                  </CardHeader>
+                  <CardBody>
+                    <h4 className={classes.cardTitle}>Most viewed videos</h4>
+                  </CardBody>
+                </Card>
+              </GridItem>
+              <GridItem xs={12} sm={12} md={6}>
+                <Card chart>
+                  <CardHeader color="warning">
+                    <TreemapChart
+                      data={Object.values(this.state.details.liked).map(
+                        (v) => ({
+                          x: v.title,
+                          y: v.liked,
+                        })
+                      )}
+                    />
+                  </CardHeader>
+                  <CardBody>
+                    <h4 className={classes.cardTitle}>Most liked videos</h4>
+                  </CardBody>
+                </Card>
+              </GridItem>
+              <GridItem xs={12} sm={12} md={6}>
+                <Card chart>
+                  <CardHeader color="danger">
+                    <TreemapChart
+                      data={Object.values(this.state.details.commented).map(
+                        (v) => ({
+                          x: v.title,
+                          y: v.comment,
+                        })
+                      )}
+                    />
+                  </CardHeader>
+                  <CardBody>
+                    <h4 className={classes.cardTitle}>Most commented videos</h4>
+                  </CardBody>
+                </Card>
+              </GridItem>
+              <GridItem xs={12} sm={12} md={6}>
+                <Card chart>
+                  <CardHeader color="info">
+                    <TreemapChart
+                      data={Object.values(this.state.details.disliked).map(
+                        (v) => ({
+                          x: v.title,
+                          y: v.disliked,
+                        })
+                      )}
+                    />
+                  </CardHeader>
+                  <CardBody>
+                    <h4 className={classes.cardTitle}>Most disliked videos</h4>
+                  </CardBody>
+                </Card>
+              </GridItem>
+            </GridContainer>
+            <GridContainer>
+              <GridItem xs={12} sm={12} md={12}>
+                <Card>
+                  <CardHeader color="warning">
+                    <h4 className={classes.cardTitleWhite}>Popular Videos</h4>
+                    <p className={classes.cardCategoryWhite}>
+                      Videos that gained lot of traction
+                    </p>
+                  </CardHeader>
+                  <CardBody>
+                    <StackedBarChart {...this.getStackedBarProps()} />
+                  </CardBody>
+                </Card>
+              </GridItem>
+              <GridItem xs={12} sm={12} md={12}>
+                <Card>
+                  <CardHeader color="success">
+                    <h4 className={classes.cardTitleWhite}>Detailed Stats</h4>
+                    <p className={classes.cardCategoryWhite}>
+                      50 Featured Videos
+                    </p>
+                  </CardHeader>
+                  <CardBody>
+                    <Table
+                      tableHeaderColor="primary"
+                      tableHead={Object.keys(colMap)}
+                      tableData={Object.values(this.state.details.all)}
+                      columnMap={colMap}
+                    />
+                  </CardBody>
+                </Card>
+              </GridItem>
+            </GridContainer>
+          </Fragment>
+        )}
       </div>
     );
   }
